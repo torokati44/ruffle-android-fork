@@ -11,7 +11,7 @@ composeBom = "2026.05.01"
 lifecycleViewmodelCompose = "2.10.0"
 navigationRuntimeKtx = "2.9.8"
 navigationCompose = "2.9.8"
-gamesActivity = "2.0.2" # Needs to be in sync with android-activity crate
+gamesActivity = "4.4.0" # Needs to be in sync with android-activity crate
 constraintlayout = "2.2.1"
 appcompat = "1.7.1"
 ktlint = "14.2.0"
@@ -43,6 +43,8 @@ androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version
 androidx-uiautomator = { group = "androidx.test.uiautomator", name = "uiautomator", version.ref = "uiautomator" }
 androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "androidXTestRunner" }
 androidx-test-rules = { group = "androidx.test", name = "rules", version.ref = "androidXTestRules" }
+# Unversioned, because its version is taken from Cargo.lock, see app/build.gradle.kts.
+rustls-platform-verifier = { group = "org.rustls", name = "rustls-platform-verifier" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
