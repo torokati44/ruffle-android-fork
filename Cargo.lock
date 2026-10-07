@@ -2757,7 +2757,6 @@ dependencies = [
  "jni",
  "log",
  "ndk",
- "ndk-context",
  "ruffle_common",
  "ruffle_core",
  "ruffle_frontend_utils",
