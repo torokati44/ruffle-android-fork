@@ -153,9 +153,6 @@ async fn run(app: AndroidApp) {
             let _ = unsafe {
                 env.set_rust_field(&*activity, jni_str!("eventLoopHandle"), sender.clone())
             };
-            // Lets reqwest verify server certificates using Android's trust store.
-            let context = env.new_local_ref(&*activity)?;
-            rustls_platform_verifier::android::init_with_env(env, context)?;
             Ok((trace_output, android_storage_dir))
         })
         .expect("JNI calls on the main thread must succeed");

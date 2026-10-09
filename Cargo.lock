@@ -2787,7 +2787,6 @@ dependencies = [
  "ruffle_render_wgpu",
  "ruffle_video_software",
  "rustls",
- "rustls-platform-verifier",
  "tokio",
  "tracing",
  "url",

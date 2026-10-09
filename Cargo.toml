@@ -23,10 +23,6 @@ android-activity = { version = "0.6.0", features = ["game-activity"] }
 android_logger = "0.15.1"
 
 jni = "0.22.4"
-# reqwest (via ruffle_frontend_utils' `rustls-tls`) verifies certificates with this,
-# which on Android needs to be initialized, and its Kotlin component included.
-# Keep it semver-compatible with the version reqwest uses, so they share a copy.
-rustls-platform-verifier = "0.7.1"
 # ruffle_frontend_utils' `rustls-tls` doesn't include a crypto provider for reqwest,
 # so we have to install one. Using `ring`, because `aws-lc-rs` needs CMake to build.
 rustls = { version = "0.23.45", default-features = false, features = ["ring", "std"] }
@@ -48,7 +44,9 @@ ruffle_core = { git = "https://github.com/ruffle-rs/ruffle.git", branch = "maste
 ] }
 ruffle_render_wgpu = { git = "https://github.com/ruffle-rs/ruffle.git", branch = "master" }
 ruffle_video_software = { git = "https://github.com/ruffle-rs/ruffle.git", branch = "master" }
-ruffle_frontend_utils = { git = "https://github.com/ruffle-rs/ruffle.git", branch = "master", default-features = false, features = ["fs", "navigator", "rustls-tls"] }
+# With `bundled-ca-certs`, reqwest doesn't need `rustls-platform-verifier`, which on Android
+# would need to be initialized, and its Kotlin component included from a Maven repo.
+ruffle_frontend_utils = { git = "https://github.com/ruffle-rs/ruffle.git", branch = "master", default-features = false, features = ["fs", "navigator", "rustls-tls", "bundled-ca-certs"] }
 
 log = "0.4.32"
 
