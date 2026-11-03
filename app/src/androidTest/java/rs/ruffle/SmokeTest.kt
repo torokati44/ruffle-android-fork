@@ -5,6 +5,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.SystemClock
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.espresso.matcher.ViewMatchers.assertThat
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -13,6 +14,7 @@ import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
 import java.io.File
+import java.util.concurrent.TimeoutException
 import org.hamcrest.CoreMatchers.equalTo
 import org.hamcrest.CoreMatchers.notNullValue
 import org.junit.Before
@@ -74,10 +76,37 @@ class SmokeTest {
 
     @Test
     fun emulatorRunsASwf() {
-        device.waitForWindowUpdate(null, 1000)
-        assertThat(device, notNullValue())
+        waitUntilLogAndIdle()
 
         val trace = traceOutput.readLines()
         assertThat(trace, equalTo(listOf("Hello from Flash!")))
+    }
+
+    /**
+     * Waits until the log file receives trace output, and then waits for it to become idle with
+     * no more output for a period of time.
+     *
+     * @param idleWindowMillis How long the log file must stay the same size for, before it's considered idle
+     * @param timeoutMillis How long to keep waiting for, before throwing an error
+     */
+    private fun waitUntilLogAndIdle(idleWindowMillis: Long = 1000, timeoutMillis: Long = 10000) {
+        val timeoutAt = SystemClock.uptimeMillis() + timeoutMillis
+        var lastSize = 0L
+        var lastChangeMillis = SystemClock.uptimeMillis()
+        while (true) {
+            val now = SystemClock.uptimeMillis()
+            val size = traceOutput.length()
+            if (size != lastSize) {
+                lastSize = size
+                lastChangeMillis = now
+            } else if (size > 0 && now - lastChangeMillis >= idleWindowMillis) {
+                return
+            }
+
+            if (now >= timeoutAt) {
+                throw TimeoutException("Trace output did not settle within $timeoutMillis ms")
+            }
+            Thread.sleep(100)
+        }
     }
 }
