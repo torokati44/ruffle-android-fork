@@ -27,4 +27,6 @@
     <string name="letterbox">黑边填充</string>
     <string name="reset_display_settings">重置显示设置</string>
     <string name="display_settings_reset">显示设置已重置。重新打开内容即可恢复其自身的缩放设置。</string>
+    <string name="clear_display_settings">清除已保存的显示设置</string>
+    <string name="display_settings_cleared">已清除保存的显示设置</string>
 </resources>

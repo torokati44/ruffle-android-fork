@@ -27,4 +27,6 @@
     <string name="letterbox">Letterbox</string>
     <string name="reset_display_settings">Reset display settings</string>
     <string name="display_settings_reset">Display settings reset. Reopen the content to restore its own scaling.</string>
+    <string name="clear_display_settings">Clear saved display settings</string>
+    <string name="display_settings_cleared">Saved display settings cleared</string>
 </resources>
