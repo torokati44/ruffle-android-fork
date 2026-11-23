@@ -1,4 +1,4 @@
-use crate::display::{align_to_int, scale_mode_to_int, DisplayState};
+use crate::display::{align_to_int, scale_mode_to_int, DisplayState, SavedSettings};
 use jni::objects::{
     JByteArray, JClass, JIntArray, JMethodID, JObject, JObjectArray, JString, JValue, ReleaseMode,
 };
@@ -22,6 +22,7 @@ pub struct JavaInterface {
     get_trace_output: JMethodID,
     get_loc_in_window: JMethodID,
     get_android_data_storage_dir: JMethodID,
+    get_display_settings: JMethodID,
 }
 
 static JAVA_INTERFACE: OnceLock<JavaInterface> = OnceLock::new();
@@ -173,6 +174,28 @@ impl JavaInterface {
         PathBuf::from(path)
     }
 
+    pub fn get_display_settings(env: &mut Env, this: &JObject) -> SavedSettings {
+        let result = unsafe {
+            env.call_method_unchecked(
+                this,
+                Self::get().get_display_settings,
+                ReturnType::Array,
+                &[],
+            )
+        };
+        let object = result
+            .expect("getDisplaySettings() must never throw")
+            .l()
+            .unwrap();
+        if object.is_null() {
+            return SavedSettings::default();
+        }
+        let arr = unsafe { JIntArray::from_raw(env, object.into_raw()) };
+        let elements = unsafe { arr.get_elements(env, ReleaseMode::NoCopyBack).unwrap() };
+        let data = unsafe { std::slice::from_raw_parts(elements.as_ptr(), elements.len()) };
+        SavedSettings::from_ints(data)
+    }
+
     pub fn get() -> &'static JavaInterface {
         JAVA_INTERFACE
             .get()
@@ -224,6 +247,9 @@ impl JavaInterface {
                     jni_sig!("()Ljava/lang/String;"),
                 )
                 .expect("getAndroidDataStorageDir must exist"),
+            get_display_settings: env
+                .get_method_id(class, jni_str!("getDisplaySettings"), jni_sig!("()[I"))
+                .expect("getDisplaySettings must exist"),
         });
     }
 }

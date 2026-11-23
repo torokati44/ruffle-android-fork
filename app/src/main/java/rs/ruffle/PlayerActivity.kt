@@ -71,6 +71,15 @@ class PlayerActivity : GameActivity() {
         startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
     }
 
+    /** Key under which this content's display settings are saved; see [DisplaySettings.contentKey]. */
+    private val contentKey: String? by lazy { DisplaySettings.contentKey(this, intent.data) }
+
+    @Suppress("unused")
+    // Used by Rust
+    private val displaySettings: IntArray
+        get() = contentKey?.let { DisplaySettings.load(this, it) }
+            ?: IntArray(5) { DisplaySettings.UNSET }
+
     private var loc = IntArray(2)
 
     @Suppress("unused")
@@ -198,38 +207,45 @@ class PlayerActivity : GameActivity() {
             menu.add(Menu.NONE, ITEM_RESET, Menu.NONE, R.string.reset_display_settings)
 
             popup.setOnMenuItemClickListener { item ->
-                onDisplayMenuItemClick(item)
+                onDisplayMenuItemClick(item, scaleMode, align)
             }
             popup.show()
         }
     }
 
-    private fun onDisplayMenuItemClick(item: MenuItem): Boolean {
+    private fun onDisplayMenuItemClick(item: MenuItem, scaleMode: Int, align: Int): Boolean {
+        val key = contentKey
         val id = item.itemId
         when {
             id in ITEM_SCALE_MODE_BASE until ITEM_SCALE_MODE_BASE + SCALE_MODES.size -> {
                 // Picking a mode also forces it, or the content would likely just change it back.
                 val mode = SCALE_MODES[id - ITEM_SCALE_MODE_BASE].first
                 setDisplayOption(DisplaySettings.OPTION_SCALE_MODE, mode)
+                key?.let { DisplaySettings.saveScaleMode(this, it, mode, force = true) }
             }
             id == ITEM_FORCE_SCALE_MODE -> {
                 val force = !item.isChecked
                 setDisplayOption(DisplaySettings.OPTION_FORCE_SCALE_MODE, if (force) 1 else 0)
+                key?.let { DisplaySettings.saveScaleMode(this, it, scaleMode, force) }
             }
             id in ITEM_ALIGN_BASE until ITEM_ALIGN_BASE + ALIGNMENTS.size -> {
                 val newAlign = ALIGNMENTS[id - ITEM_ALIGN_BASE].first
                 setDisplayOption(DisplaySettings.OPTION_ALIGN, newAlign)
+                key?.let { DisplaySettings.saveAlign(this, it, newAlign, force = true) }
             }
             id == ITEM_FORCE_ALIGN -> {
                 val force = !item.isChecked
                 setDisplayOption(DisplaySettings.OPTION_FORCE_ALIGN, if (force) 1 else 0)
+                key?.let { DisplaySettings.saveAlign(this, it, align, force) }
             }
             id == ITEM_LETTERBOX -> {
                 val letterbox = !item.isChecked
                 setDisplayOption(DisplaySettings.OPTION_LETTERBOX, if (letterbox) 1 else 0)
+                key?.let { DisplaySettings.saveLetterbox(this, it, letterbox) }
             }
             id == ITEM_RESET -> {
                 setDisplayOption(DisplaySettings.OPTION_RESET, 0)
+                key?.let { DisplaySettings.reset(this, it) }
                 Toast.makeText(this, R.string.display_settings_reset, Toast.LENGTH_LONG).show()
             }
             // Submenu headers, which just open their submenu.

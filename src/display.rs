@@ -4,7 +4,7 @@
 //! keep them in sync.
 
 use ruffle_core::config::Letterbox;
-use ruffle_core::{Player, StageAlign, StageScaleMode};
+use ruffle_core::{Player, PlayerBuilder, StageAlign, StageScaleMode};
 use std::convert::TryFrom;
 
 pub fn scale_mode_to_int(mode: StageScaleMode) -> i32 {
@@ -126,4 +126,46 @@ pub fn apply(player: &mut Player, option: DisplayOption) {
         }
         *context.needs_render = true;
     });
+}
+
+/// The settings saved for the current content by `DisplaySettings.kt`, applied at startup.
+#[derive(Default)]
+pub struct SavedSettings {
+    scale_mode: Option<(StageScaleMode, bool)>,
+    align: Option<(StageAlign, bool)>,
+    letterbox: Option<bool>,
+}
+
+impl SavedSettings {
+    /// Decodes `[scaleMode, forceScaleMode, align, forceAlign, letterbox]`, where `-1` means unset.
+    pub fn from_ints(values: &[i32]) -> Self {
+        let get = |i: usize| values.get(i).copied().unwrap_or(-1);
+        Self {
+            scale_mode: scale_mode_from_int(get(0)).map(|mode| (mode, get(1) == 1)),
+            align: if get(2) >= 0 {
+                align_from_int(get(2)).map(|align| (align, get(3) == 1))
+            } else {
+                None
+            },
+            letterbox: match get(4) {
+                0 => Some(false),
+                1 => Some(true),
+                _ => None,
+            },
+        }
+    }
+
+    pub fn apply_to_builder(&self, mut builder: PlayerBuilder) -> PlayerBuilder {
+        if let Some((mode, force)) = self.scale_mode {
+            builder = builder.with_scale_mode(mode, force);
+        }
+        if let Some((align, force)) = self.align {
+            builder = builder.with_align(align, force);
+        }
+        builder
+    }
+
+    pub fn letterbox(&self) -> Letterbox {
+        letterbox_from_bool(self.letterbox.unwrap_or(DEFAULT_LETTERBOX))
+    }
 }

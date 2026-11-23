@@ -146,18 +146,19 @@ async fn run(app: AndroidApp) {
     // This is a global reference, so it can only be borrowed, not wrapped as a local one.
     let activity_raw = app.activity_as_ptr() as jobject;
 
-    let (trace_output, android_storage_dir) = vm
+    let (trace_output, android_storage_dir, display_settings) = vm
         .attach_current_thread(|env| -> jni::errors::Result<_> {
             let activity = unsafe { env.as_cast_raw::<JObject>(&activity_raw) }?;
             let trace_output = JavaInterface::get_trace_output(env, &activity);
             let android_storage_dir = JavaInterface::get_android_data_storage_dir(env, &activity);
+            let display_settings = JavaInterface::get_display_settings(env, &activity);
             let _ = unsafe {
                 env.set_rust_field(&*activity, jni_str!("eventLoopHandle"), sender.clone())
             };
             // Lets reqwest verify server certificates using Android's trust store.
             let context = env.new_local_ref(&*activity)?;
             rustls_platform_verifier::android::init_with_env(env, context)?;
-            Ok((trace_output, android_storage_dir))
+            Ok((trace_output, android_storage_dir, display_settings))
         })
         .expect("JNI calls on the main thread must succeed");
 
@@ -327,7 +328,7 @@ async fn run(app: AndroidApp) {
 
                                 playerbox = Some(ActivePlayer {
                                     id: player_id,
-                                    player: PlayerBuilder::new()
+                                    player: display_settings.apply_to_builder(PlayerBuilder::new()
                                             .with_renderer(renderer)
                                             .with_audio(AAudioAudioBackend::new().unwrap())
                                             .with_storage(Box::new(DiskStorageBackend::new(android_storage_dir.clone())))
@@ -335,7 +336,7 @@ async fn run(app: AndroidApp) {
                                             .with_log(FileLogBackend::new(trace_output.as_deref()))
                                             .with_video(
                                                 ruffle_video_software::backend::SoftwareVideoBackend::new(),
-                                            )
+                                            ))
                                         .build(),
                                     }
                                 );
@@ -360,7 +361,7 @@ async fn run(app: AndroidApp) {
                                 }
                                 player_lock.set_is_playing(true); // Desktop player will auto-play.
 
-                                player_lock.set_letterbox(ruffle_core::config::Letterbox::On);
+                                player_lock.set_letterbox(display_settings.letterbox());
 
                                 player_lock.set_viewport_dimensions(dimensions);
 
