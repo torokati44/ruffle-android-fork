@@ -427,6 +427,14 @@
             android:tag="cm"
             android:text="▤" />
 
+        <Button
+            android:id="@+id/button_dm"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/display_menu"
+            android:tag="dm"
+            android:text="⛶" />
+
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

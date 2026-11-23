@@ -2,6 +2,7 @@
 
 use ruffle_core::events::KeyDescriptor;
 
+use crate::display::DisplayOption;
 use crate::PlayerRunnable;
 
 /// User-defined events.
@@ -15,4 +16,6 @@ pub enum RuffleEvent {
     RunContextMenuCallback(usize),
     ClearContextMenu,
     RequestContextMenu,
+    RequestDisplayMenu,
+    SetDisplayOption(DisplayOption),
 }

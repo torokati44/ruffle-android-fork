@@ -1,5 +1,6 @@
 mod audio;
 mod custom_event;
+mod display;
 mod java;
 mod keycodes;
 mod navigator;
@@ -522,6 +523,20 @@ async fn run(app: AndroidApp) {
                     player.player.lock().unwrap().clear_custom_menu_items();
                 }
             }
+            Ok(RuffleEvent::RequestDisplayMenu) => {
+                if let Some(player) = playerbox.as_ref() {
+                    let state = display::current_state(&mut player.player.lock().unwrap());
+                    with_activity(&app, |env, activity| {
+                        JavaInterface::show_display_menu(env, activity, &state)
+                    })
+                    .unwrap();
+                }
+            }
+            Ok(RuffleEvent::SetDisplayOption(option)) => {
+                if let Some(player) = playerbox.as_ref() {
+                    display::apply(&mut player.player.lock().unwrap(), option);
+                }
+            }
             Ok(RuffleEvent::RequestContextMenu) => {
                 if let Some(player) = playerbox.as_ref() {
                     log::warn!("preparing context menu!");
@@ -648,6 +663,44 @@ pub unsafe extern "C" fn Java_rs_ruffle_PlayerActivity_requestContextMenu<'local
             let event_loop: MutexGuard<Sender<RuffleEvent>> =
                 unsafe { env.get_rust_field(&this, jni_str!("eventLoopHandle")) }?;
             let _ = event_loop.send(RuffleEvent::RequestContextMenu);
+            Ok(())
+        })
+        .resolve::<ThrowRuntimeExAndDefault>()
+}
+
+#[no_mangle]
+#[allow(clippy::missing_safety_doc)]
+pub unsafe extern "C" fn Java_rs_ruffle_PlayerActivity_requestDisplayMenu<'local>(
+    mut unowned_env: EnvUnowned<'local>,
+    this: JObject<'local>,
+) {
+    unowned_env
+        .with_env(|env| -> jni::errors::Result<()> {
+            let event_loop: MutexGuard<EventSender> =
+                unsafe { env.get_rust_field(&this, jni_str!("eventLoopHandle")) }?;
+            event_loop.send(RuffleEvent::RequestDisplayMenu);
+            Ok(())
+        })
+        .resolve::<ThrowRuntimeExAndDefault>()
+}
+
+#[no_mangle]
+#[allow(clippy::missing_safety_doc)]
+pub unsafe extern "C" fn Java_rs_ruffle_PlayerActivity_setDisplayOption<'local>(
+    mut unowned_env: EnvUnowned<'local>,
+    this: JObject<'local>,
+    kind: jint,
+    value: jint,
+) {
+    unowned_env
+        .with_env(|env| -> jni::errors::Result<()> {
+            let Some(option) = display::DisplayOption::from_ints(kind, value) else {
+                log::warn!("Ignoring unknown display option: kind={kind}, value={value}");
+                return Ok(());
+            };
+            let event_loop: MutexGuard<EventSender> =
+                unsafe { env.get_rust_field(&this, jni_str!("eventLoopHandle")) }?;
+            event_loop.send(RuffleEvent::SetDisplayOption(option));
             Ok(())
         })
         .resolve::<ThrowRuntimeExAndDefault>()

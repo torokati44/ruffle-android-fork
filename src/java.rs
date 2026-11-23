@@ -1,3 +1,4 @@
+use crate::display::{align_to_int, scale_mode_to_int, DisplayState};
 use jni::objects::{
     JByteArray, JClass, JIntArray, JMethodID, JObject, JObjectArray, JString, JValue, ReleaseMode,
 };
@@ -15,6 +16,7 @@ pub struct JavaInterface {
     get_surface_width: JMethodID,
     get_surface_height: JMethodID,
     show_context_menu: JMethodID,
+    show_display_menu: JMethodID,
     get_swf_bytes: JMethodID,
     get_swf_uri: JMethodID,
     get_trace_output: JMethodID,
@@ -75,6 +77,24 @@ impl JavaInterface {
             )
         };
         result.expect("showContextMenu() must never throw");
+    }
+
+    pub fn show_display_menu(env: &mut Env, this: &JObject, state: &DisplayState) {
+        let result = unsafe {
+            env.call_method_unchecked(
+                this,
+                Self::get().show_display_menu,
+                ReturnType::Primitive(Primitive::Void),
+                &[
+                    JValue::Int(scale_mode_to_int(state.scale_mode)).as_jni(),
+                    JValue::Bool(state.forced_scale_mode).as_jni(),
+                    JValue::Int(align_to_int(state.align)).as_jni(),
+                    JValue::Bool(state.forced_align).as_jni(),
+                    JValue::Bool(state.letterbox).as_jni(),
+                ],
+            )
+        };
+        result.expect("showDisplayMenu() must never throw");
     }
 
     pub fn get_swf_bytes(env: &mut Env, this: &JObject) -> Option<Vec<u8>> {
@@ -174,6 +194,9 @@ impl JavaInterface {
                     jni_sig!("([Ljava/lang/String;)V"),
                 )
                 .expect("showContextMenu must exist"),
+            show_display_menu: env
+                .get_method_id(class, jni_str!("showDisplayMenu"), jni_sig!("(IZIZZ)V"))
+                .expect("showDisplayMenu must exist"),
             get_swf_bytes: env
                 .get_method_id(class, jni_str!("getSwfBytes"), jni_sig!("()[B"))
                 .expect("getSwfBytes must exist"),

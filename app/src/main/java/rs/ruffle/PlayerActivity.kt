@@ -17,6 +17,7 @@ import android.view.Window
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.PopupMenu
+import android.widget.Toast
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
@@ -99,6 +100,8 @@ class PlayerActivity : GameActivity() {
     private external fun requestContextMenu()
     private external fun runContextMenuCallback(index: Int)
     private external fun clearContextMenu()
+    private external fun requestDisplayMenu()
+    private external fun setDisplayOption(kind: Int, value: Int)
 
     @Suppress("unused")
     // Used by Rust
@@ -137,6 +140,102 @@ class PlayerActivity : GameActivity() {
             popup.setOnDismissListener { clearContextMenu() }
             popup.show()
         }
+    }
+
+    @Suppress("unused")
+    // Used by Rust
+    private fun showDisplayMenu(
+        scaleMode: Int,
+        forceScaleMode: Boolean,
+        align: Int,
+        forceAlign: Boolean,
+        letterbox: Boolean
+    ) {
+        runOnUiThread {
+            val popup = PopupMenu(this, findViewById(R.id.button_dm))
+            val menu = popup.menu
+
+            val scaleMenu = menu.addSubMenu(Menu.NONE, Menu.NONE, Menu.NONE, R.string.scale_mode)
+            SCALE_MODES.forEachIndexed { i, (_, label) ->
+                scaleMenu.add(GROUP_SCALE_MODE, ITEM_SCALE_MODE_BASE + i, Menu.NONE, label)
+            }
+            scaleMenu.setGroupCheckable(GROUP_SCALE_MODE, true, true)
+            val scaleIndex = SCALE_MODES.indexOfFirst { it.first == scaleMode }
+            if (scaleIndex >= 0) {
+                scaleMenu.findItem(ITEM_SCALE_MODE_BASE + scaleIndex).isChecked = true
+            }
+            menu.add(Menu.NONE, ITEM_FORCE_SCALE_MODE, Menu.NONE, R.string.force_scale_mode).apply {
+                isCheckable = true
+                isChecked = forceScaleMode
+            }
+
+            // Alignment has no effect when the content is stretched to fill the screen.
+            val alignEnabled = scaleMode != DisplaySettings.SCALE_EXACT_FIT
+            val alignMenu = menu.addSubMenu(Menu.NONE, Menu.NONE, Menu.NONE, R.string.alignment)
+            alignMenu.item.isEnabled = alignEnabled
+            ALIGNMENTS.forEachIndexed { i, (_, label) ->
+                alignMenu.add(GROUP_ALIGN, ITEM_ALIGN_BASE + i, Menu.NONE, label)
+            }
+            alignMenu.setGroupCheckable(GROUP_ALIGN, true, true)
+            val alignIndex = ALIGNMENTS.indexOfFirst { it.first == align }
+            if (alignIndex >= 0) {
+                alignMenu.findItem(ITEM_ALIGN_BASE + alignIndex).isChecked = true
+            }
+            menu.add(Menu.NONE, ITEM_FORCE_ALIGN, Menu.NONE, R.string.force_alignment).apply {
+                isCheckable = true
+                isChecked = forceAlign
+                isEnabled = alignEnabled
+            }
+
+            menu.add(Menu.NONE, ITEM_LETTERBOX, Menu.NONE, R.string.letterbox).apply {
+                isCheckable = true
+                isChecked = letterbox
+                // Ruffle only draws the letterbox for centered "show all" content.
+                isEnabled = scaleMode == DisplaySettings.SCALE_SHOW_ALL &&
+                    align == DisplaySettings.ALIGN_CENTER
+            }
+
+            menu.add(Menu.NONE, ITEM_RESET, Menu.NONE, R.string.reset_display_settings)
+
+            popup.setOnMenuItemClickListener { item ->
+                onDisplayMenuItemClick(item)
+            }
+            popup.show()
+        }
+    }
+
+    private fun onDisplayMenuItemClick(item: MenuItem): Boolean {
+        val id = item.itemId
+        when {
+            id in ITEM_SCALE_MODE_BASE until ITEM_SCALE_MODE_BASE + SCALE_MODES.size -> {
+                // Picking a mode also forces it, or the content would likely just change it back.
+                val mode = SCALE_MODES[id - ITEM_SCALE_MODE_BASE].first
+                setDisplayOption(DisplaySettings.OPTION_SCALE_MODE, mode)
+            }
+            id == ITEM_FORCE_SCALE_MODE -> {
+                val force = !item.isChecked
+                setDisplayOption(DisplaySettings.OPTION_FORCE_SCALE_MODE, if (force) 1 else 0)
+            }
+            id in ITEM_ALIGN_BASE until ITEM_ALIGN_BASE + ALIGNMENTS.size -> {
+                val newAlign = ALIGNMENTS[id - ITEM_ALIGN_BASE].first
+                setDisplayOption(DisplaySettings.OPTION_ALIGN, newAlign)
+            }
+            id == ITEM_FORCE_ALIGN -> {
+                val force = !item.isChecked
+                setDisplayOption(DisplaySettings.OPTION_FORCE_ALIGN, if (force) 1 else 0)
+            }
+            id == ITEM_LETTERBOX -> {
+                val letterbox = !item.isChecked
+                setDisplayOption(DisplaySettings.OPTION_LETTERBOX, if (letterbox) 1 else 0)
+            }
+            id == ITEM_RESET -> {
+                setDisplayOption(DisplaySettings.OPTION_RESET, 0)
+                Toast.makeText(this, R.string.display_settings_reset, Toast.LENGTH_LONG).show()
+            }
+            // Submenu headers, which just open their submenu.
+            else -> return false
+        }
+        return true
     }
 
     @Suppress("unused")
@@ -194,6 +293,8 @@ class PlayerActivity : GameActivity() {
         }
         layout.findViewById<View>(R.id.button_cm)
             .setOnClickListener { requestContextMenu() }
+        layout.findViewById<View>(R.id.button_dm)
+            .setOnClickListener { requestDisplayMenu() }
         layout.requestLayout()
         layout.requestFocus()
         mSurfaceView.holder.addCallback(this)
@@ -274,6 +375,38 @@ class PlayerActivity : GameActivity() {
 
         @JvmStatic
         private external fun nativeInit(crashCallback: CrashCallback)
+
+        private const val GROUP_SCALE_MODE = 1
+        private const val GROUP_ALIGN = 2
+        private const val ITEM_FORCE_SCALE_MODE = 1
+        private const val ITEM_FORCE_ALIGN = 2
+        private const val ITEM_LETTERBOX = 3
+        private const val ITEM_RESET = 4
+        private const val ITEM_SCALE_MODE_BASE = 100
+        private const val ITEM_ALIGN_BASE = 200
+
+        /** Scale mode values with their menu labels, in menu order. */
+        private val SCALE_MODES = listOf(
+            DisplaySettings.SCALE_NO_SCALE to R.string.scale_mode_no_scale,
+            DisplaySettings.SCALE_SHOW_ALL to R.string.scale_mode_show_all,
+            DisplaySettings.SCALE_EXACT_FIT to R.string.scale_mode_exact_fit,
+            DisplaySettings.SCALE_NO_BORDER to R.string.scale_mode_no_border
+        )
+
+        /** Alignment flag combinations with their menu labels, in menu order. */
+        private val ALIGNMENTS = listOf(
+            DisplaySettings.ALIGN_CENTER to R.string.align_center,
+            DisplaySettings.ALIGN_TOP to R.string.align_top,
+            DisplaySettings.ALIGN_BOTTOM to R.string.align_bottom,
+            DisplaySettings.ALIGN_LEFT to R.string.align_left,
+            DisplaySettings.ALIGN_RIGHT to R.string.align_right,
+            (DisplaySettings.ALIGN_TOP or DisplaySettings.ALIGN_LEFT) to R.string.align_top_left,
+            (DisplaySettings.ALIGN_TOP or DisplaySettings.ALIGN_RIGHT) to R.string.align_top_right,
+            (DisplaySettings.ALIGN_BOTTOM or DisplaySettings.ALIGN_LEFT) to
+                R.string.align_bottom_left,
+            (DisplaySettings.ALIGN_BOTTOM or DisplaySettings.ALIGN_RIGHT) to
+                R.string.align_bottom_right
+        )
 
         private fun <T> gatherAllDescendantsOfType(v: View, t: Class<*>): List<T> {
             val result: MutableList<T> = ArrayList()

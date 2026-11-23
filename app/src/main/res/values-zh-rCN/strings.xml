@@ -6,4 +6,25 @@
     <string name="select_a_swf">选择本地swf文件</string>
     <string name="url">请输入网页链接</string>
     <string name="work_in_progress_warning">这款应用还在开发中，一些功能可能尚未实现！</string>
+    <string name="display_menu">显示设置</string>
+    <string name="scale_mode">缩放模式</string>
+    <string name="scale_mode_no_scale">不缩放</string>
+    <string name="scale_mode_show_all">显示全部（等比缩放）</string>
+    <string name="scale_mode_exact_fit">精确适应（拉伸）</string>
+    <string name="scale_mode_no_border">无边框（裁剪）</string>
+    <string name="force_scale_mode">强制缩放模式</string>
+    <string name="alignment">对齐方式</string>
+    <string name="align_center">居中</string>
+    <string name="align_top">顶部</string>
+    <string name="align_bottom">底部</string>
+    <string name="align_left">左侧</string>
+    <string name="align_right">右侧</string>
+    <string name="align_top_left">左上</string>
+    <string name="align_top_right">右上</string>
+    <string name="align_bottom_left">左下</string>
+    <string name="align_bottom_right">右下</string>
+    <string name="force_alignment">强制对齐方式</string>
+    <string name="letterbox">黑边填充</string>
+    <string name="reset_display_settings">重置显示设置</string>
+    <string name="display_settings_reset">显示设置已重置。重新打开内容即可恢复其自身的缩放设置。</string>
 </resources>
