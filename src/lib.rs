@@ -597,10 +597,10 @@ pub unsafe extern "C" fn Java_rs_ruffle_PlayerActivity_keydown<'local>(
         .with_env(|env| -> jni::errors::Result<()> {
             let tag = key_tag.try_to_string(env)?;
 
-            let event_loop: MutexGuard<Sender<RuffleEvent>> =
+            let event_loop: MutexGuard<EventSender> =
                 unsafe { env.get_rust_field(&this, jni_str!("eventLoopHandle")) }?;
             if let Some(desc) = key_tag_to_key_descriptor(&tag) {
-                let _ = event_loop.send(RuffleEvent::VirtualKeyEvent {
+                event_loop.send(RuffleEvent::VirtualKeyEvent {
                     down: true,
                     key_descriptor: desc,
                 });
@@ -621,10 +621,10 @@ pub unsafe extern "C" fn Java_rs_ruffle_PlayerActivity_keyup<'local>(
         .with_env(|env| -> jni::errors::Result<()> {
             let tag = key_tag.try_to_string(env)?;
 
-            let event_loop: MutexGuard<Sender<RuffleEvent>> =
+            let event_loop: MutexGuard<EventSender> =
                 unsafe { env.get_rust_field(&this, jni_str!("eventLoopHandle")) }?;
             if let Some(desc) = key_tag_to_key_descriptor(&tag) {
-                let _ = event_loop.send(RuffleEvent::VirtualKeyEvent {
+                event_loop.send(RuffleEvent::VirtualKeyEvent {
                     down: false,
                     key_descriptor: desc,
                 });
@@ -661,9 +661,9 @@ pub unsafe extern "C" fn Java_rs_ruffle_PlayerActivity_requestContextMenu<'local
 ) {
     unowned_env
         .with_env(|env| -> jni::errors::Result<()> {
-            let event_loop: MutexGuard<Sender<RuffleEvent>> =
+            let event_loop: MutexGuard<EventSender> =
                 unsafe { env.get_rust_field(&this, jni_str!("eventLoopHandle")) }?;
-            let _ = event_loop.send(RuffleEvent::RequestContextMenu);
+            event_loop.send(RuffleEvent::RequestContextMenu);
             Ok(())
         })
         .resolve::<ThrowRuntimeExAndDefault>()
@@ -716,9 +716,9 @@ pub unsafe extern "C" fn Java_rs_ruffle_PlayerActivity_runContextMenuCallback<'l
 ) {
     unowned_env
         .with_env(|env| -> jni::errors::Result<()> {
-            let event_loop: MutexGuard<Sender<RuffleEvent>> =
+            let event_loop: MutexGuard<EventSender> =
                 unsafe { env.get_rust_field(&this, jni_str!("eventLoopHandle")) }?;
-            let _ = event_loop.send(RuffleEvent::RunContextMenuCallback(index as usize));
+            event_loop.send(RuffleEvent::RunContextMenuCallback(index as usize));
             Ok(())
         })
         .resolve::<ThrowRuntimeExAndDefault>()
@@ -732,9 +732,9 @@ pub unsafe extern "C" fn Java_rs_ruffle_PlayerActivity_clearContextMenu<'local>(
 ) {
     unowned_env
         .with_env(|env| -> jni::errors::Result<()> {
-            let event_loop: MutexGuard<Sender<RuffleEvent>> =
+            let event_loop: MutexGuard<EventSender> =
                 unsafe { env.get_rust_field(&this, jni_str!("eventLoopHandle")) }?;
-            let _ = event_loop.send(RuffleEvent::ClearContextMenu);
+            event_loop.send(RuffleEvent::ClearContextMenu);
             Ok(())
         })
         .resolve::<ThrowRuntimeExAndDefault>()
