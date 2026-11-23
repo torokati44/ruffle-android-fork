@@ -136,14 +136,8 @@ class PlayerActivity : GameActivity() {
                     item.setChecked(true)
                 }
             }
-            val exitItemId: Int = items.size
-            menu.add(group, exitItemId, Menu.NONE, "Exit")
             popup.setOnMenuItemClickListener { item: MenuItem ->
-                if (item.itemId == exitItemId) {
-                    finish()
-                } else {
-                    runContextMenuCallback(item.itemId)
-                }
+                runContextMenuCallback(item.itemId)
                 true
             }
             popup.setOnDismissListener { clearContextMenu() }
@@ -311,6 +305,8 @@ class PlayerActivity : GameActivity() {
             .setOnClickListener { requestContextMenu() }
         layout.findViewById<View>(R.id.button_dm)
             .setOnClickListener { requestDisplayMenu() }
+        layout.findViewById<View>(R.id.button_exit)
+            .setOnClickListener { finish() }
         layout.requestLayout()
         layout.requestFocus()
         mSurfaceView.holder.addCallback(this)

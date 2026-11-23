@@ -435,6 +435,19 @@
             android:tag="dm"
             android:text="⛶" />
 
+        <View
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1" />
+
+        <Button
+            android:id="@+id/button_exit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/exit"
+            android:tag="exit"
+            android:text="✕" />
+
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
